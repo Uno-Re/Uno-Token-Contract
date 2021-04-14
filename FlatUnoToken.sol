@@ -473,34 +473,6 @@ contract ERC20Detailed is IERC20 {
     }
 }
 
-// File: @openzeppelin/contracts/token/ERC20/ERC20Burnable.sol
-
-pragma solidity ^0.5.0;
-
-
-/**
- * @dev Extension of `ERC20` that allows token holders to destroy both their own
- * tokens and those that they have an allowance for, in a way that can be
- * recognized off-chain (via event analysis).
- */
-contract ERC20Burnable is ERC20 {
-    /**
-     * @dev Destoys `amount` tokens from the caller.
-     *
-     * See `ERC20._burn`.
-     */
-    function burn(uint256 amount) public {
-        _burn(msg.sender, amount);
-    }
-
-    /**
-     * @dev See `ERC20._burnFrom`.
-     */
-    function burnFrom(address account, uint256 amount) public {
-        _burnFrom(account, amount);
-    }
-}
-
 // File: @openzeppelin/contracts/access/Roles.sol
 
 pragma solidity ^0.5.0;
@@ -537,6 +509,145 @@ library Roles {
     function has(Role storage role, address account) internal view returns (bool) {
         require(account != address(0), "Roles: account is the zero address");
         return role.bearer[account];
+    }
+}
+
+// File: @openzeppelin/contracts/access/roles/MinterRole.sol
+
+pragma solidity ^0.5.0;
+
+
+contract MinterRole {
+    using Roles for Roles.Role;
+
+    event MinterAdded(address indexed account);
+    event MinterRemoved(address indexed account);
+
+    Roles.Role private _minters;
+
+    constructor () internal {
+        _addMinter(msg.sender);
+    }
+
+    modifier onlyMinter() {
+        require(isMinter(msg.sender), "MinterRole: caller does not have the Minter role");
+        _;
+    }
+
+    function isMinter(address account) public view returns (bool) {
+        return _minters.has(account);
+    }
+
+    function addMinter(address account) public onlyMinter {
+        _addMinter(account);
+    }
+
+    function renounceMinter() public {
+        _removeMinter(msg.sender);
+    }
+
+    function _addMinter(address account) internal {
+        _minters.add(account);
+        emit MinterAdded(account);
+    }
+
+    function _removeMinter(address account) internal {
+        _minters.remove(account);
+        emit MinterRemoved(account);
+    }
+}
+
+// File: @openzeppelin/contracts/token/ERC20/ERC20Mintable.sol
+
+pragma solidity ^0.5.0;
+
+
+
+/**
+ * @dev Extension of `ERC20` that adds a set of accounts with the `MinterRole`,
+ * which have permission to mint (create) new tokens as they see fit.
+ *
+ * At construction, the deployer of the contract is the only minter.
+ */
+contract ERC20Mintable is ERC20, MinterRole {
+    /**
+     * @dev See `ERC20._mint`.
+     *
+     * Requirements:
+     *
+     * - the caller must have the `MinterRole`.
+     */
+    function mint(address account, uint256 amount) public onlyMinter returns (bool) {
+        _mint(account, amount);
+        return true;
+    }
+}
+
+// File: @openzeppelin/contracts/token/ERC20/ERC20Capped.sol
+
+pragma solidity ^0.5.0;
+
+
+/**
+ * @dev Extension of `ERC20Mintable` that adds a cap to the supply of tokens.
+ */
+contract ERC20Capped is ERC20Mintable {
+    uint256 private _cap;
+
+    /**
+     * @dev Sets the value of the `cap`. This value is immutable, it can only be
+     * set once during construction.
+     */
+    constructor (uint256 cap) public {
+        require(cap > 0, "ERC20Capped: cap is 0");
+        _cap = cap;
+    }
+
+    /**
+     * @dev Returns the cap on the token's total supply.
+     */
+    function cap() public view returns (uint256) {
+        return _cap;
+    }
+
+    /**
+     * @dev See `ERC20Mintable.mint`.
+     *
+     * Requirements:
+     *
+     * - `value` must not cause the total supply to go over the cap.
+     */
+    function _mint(address account, uint256 value) internal {
+        require(totalSupply().add(value) <= _cap, "ERC20Capped: cap exceeded");
+        super._mint(account, value);
+    }
+}
+
+// File: @openzeppelin/contracts/token/ERC20/ERC20Burnable.sol
+
+pragma solidity ^0.5.0;
+
+
+/**
+ * @dev Extension of `ERC20` that allows token holders to destroy both their own
+ * tokens and those that they have an allowance for, in a way that can be
+ * recognized off-chain (via event analysis).
+ */
+contract ERC20Burnable is ERC20 {
+    /**
+     * @dev Destoys `amount` tokens from the caller.
+     *
+     * See `ERC20._burn`.
+     */
+    function burn(uint256 amount) public {
+        _burn(msg.sender, amount);
+    }
+
+    /**
+     * @dev See `ERC20._burnFrom`.
+     */
+    function burnFrom(address account, uint256 amount) public {
+        _burnFrom(account, amount);
     }
 }
 
@@ -746,10 +857,13 @@ pragma solidity ^0.5.0;
 
 
 
-contract UnoToken is ERC20 , ERC20Detailed , ERC20Burnable , ERC20Pausable ,ReentrancyGuard {
+
+
+contract UnoToken is ERC20 , ERC20Detailed , ERC20Mintable , ERC20Burnable , ERC20Capped , ERC20Pausable , ReentrancyGuard {
   constructor (uint256 _totalSupply)
     
     ERC20Detailed("UnoRe" , "UNO",18)
+    ERC20Capped(384649206*10**18)
 
         public
         {
