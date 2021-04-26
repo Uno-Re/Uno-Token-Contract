@@ -228,14 +228,14 @@ contract ERC20 is IERC20 {
     /**
      * @dev See `IERC20.totalSupply`.
      */
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() external view returns (uint256) {
         return _totalSupply;
     }
 
     /**
      * @dev See `IERC20.balanceOf`.
      */
-    function balanceOf(address account) public view returns (uint256) {
+    function balanceOf(address account) external view returns (uint256) {
         return _balances[account];
     }
 
@@ -255,7 +255,7 @@ contract ERC20 is IERC20 {
     /**
      * @dev See `IERC20.allowance`.
      */
-    function allowance(address owner, address spender) public view returns (uint256) {
+    function allowance(address owner, address spender) external view returns (uint256) {
         return _allowances[owner][spender];
     }
 
@@ -444,7 +444,7 @@ contract ERC20Detailed is IERC20 {
     /**
      * @dev Returns the name of the token.
      */
-    function name() public view returns (string memory) {
+    function name() external view returns (string memory) {
         return _name;
     }
 
@@ -452,7 +452,7 @@ contract ERC20Detailed is IERC20 {
      * @dev Returns the symbol of the token, usually a shorter version of the
      * name.
      */
-    function symbol() public view returns (string memory) {
+    function symbol() external view returns (string memory) {
         return _symbol;
     }
 
@@ -468,7 +468,7 @@ contract ERC20Detailed is IERC20 {
      * no way affects any of the arithmetic of the contract, including
      * `IERC20.balanceOf` and `IERC20.transfer`.
      */
-    function decimals() public view returns (uint8) {
+    function decimals() external view returns (uint8) {
         return _decimals;
     }
 }
@@ -489,14 +489,14 @@ contract ERC20Burnable is ERC20 {
      *
      * See `ERC20._burn`.
      */
-    function burn(uint256 amount) public {
+    function burn(uint256 amount) external {
         _burn(msg.sender, amount);
     }
 
     /**
      * @dev See `ERC20._burnFrom`.
      */
-    function burnFrom(address account, uint256 amount) public {
+    function burnFrom(address account, uint256 amount) external {
         _burnFrom(account, amount);
     }
 }
@@ -566,11 +566,11 @@ contract PauserRole {
         return _pausers.has(account);
     }
 
-    function addPauser(address account) public onlyPauser {
+    function addPauser(address account) external onlyPauser {
         _addPauser(account);
     }
 
-    function renouncePauser() public {
+    function renouncePauser() external {
         _removePauser(msg.sender);
     }
 
@@ -623,7 +623,7 @@ contract Pausable is PauserRole {
     /**
      * @dev Returns true if the contract is paused, and false otherwise.
      */
-    function paused() public view returns (bool) {
+    function paused() external view returns (bool) {
         return _paused;
     }
 
@@ -646,7 +646,7 @@ contract Pausable is PauserRole {
     /**
      * @dev Called by a pauser to pause, triggers stopped state.
      */
-    function pause() public onlyPauser whenNotPaused {
+    function pause() external onlyPauser whenNotPaused {
         _paused = true;
         emit Paused(msg.sender);
     }
@@ -654,7 +654,7 @@ contract Pausable is PauserRole {
     /**
      * @dev Called by a pauser to unpause, returns to normal state.
      */
-    function unpause() public onlyPauser whenPaused {
+    function unpause() external onlyPauser whenPaused {
         _paused = false;
         emit Unpaused(msg.sender);
     }
